@@ -332,6 +332,7 @@ function InboxList({
   // Row to focus after its predecessor leaves the list ("" means the toolbar).
   const focusRow = useRef<string | undefined>(undefined);
   const workspace = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLUListElement | null>(null);
   const retryFocus = useRef(false);
   const retiredFocus = useRef(false);
   const retryButton = useCallback((button: HTMLButtonElement | null) => {
@@ -647,9 +648,7 @@ function InboxList({
   function listOwnsFocus() {
     const focused = document.activeElement;
     if (!focused || focused === document.body) return true;
-    return !!workspace.current
-      ?.querySelector('ul[aria-label="Activity"]')
-      ?.contains(focused);
+    return !!listRef.current?.contains(focused);
   }
   function markRead(item: InboxItem) {
     // Captured at click: the successor, if this row held focus.
@@ -925,6 +924,7 @@ function InboxList({
                 </div>
               )}
             <ul
+              ref={listRef}
               className={styles.list}
               aria-label="Activity"
               aria-busy={pending}
