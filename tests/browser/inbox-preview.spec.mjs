@@ -1,0 +1,137 @@
+import { test, expect } from "./fixture.mjs";
+import { open } from "./timeline.mjs";
+
+// Browser-only contract: a real pointer resting on the dock tab opens the
+// card, which sits just past the row, and its row navigates without opening
+// Inbox. Shell gating and the card's states stay in RTL tests.
+test.use({
+  productionBroker: true,
+  readState: true,
+  threadUnread: true,
+  threadUnreadMentions: true,
+  inboxDm: true,
+  historyCounts: { alpha: 2, beta: 1 },
+});
+
+test("hovering the dock Inbox tab previews recent conversations and opens one directly", async ({
+  page,
+  app,
+}, testInfo) => {
+  await open(page, app);
+  const pages = page.getByRole("navigation", {
+    name: "Apps dock",
+    exact: true,
+  });
+  const inboxRow = pages.getByRole("tab", { name: "Inbox", exact: true });
+  const card = page.getByRole("dialog", { name: "Inbox", exact: true });
+  const rows = card.getByRole("list", { name: "Recent Inbox conversations" });
+  // Beside the row, inside the window, in both themes, at an intermediate
+  // width and with enlarged text.
+  for (const [mode, width, fontSize] of [
+    ["light", 1280, "16px"],
+    ["dark", 1280, "16px"],
+    ["dark", 760, "20px"],
+  ]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.evaluate(
+      ({ mode, fontSize }) => {
+        document.documentElement.dataset.colorMode = mode;
+        document.documentElement.classList.toggle("dark", mode === "dark");
+        document.documentElement.style.fontSize = fontSize;
+      },
+      { mode, fontSize },
+    );
+    await inboxRow.hover();
+    await expect(
+      rows.getByText("Unread reply 1", { exact: true }),
+    ).toBeVisible();
+    await expect(card.getByText("Checking recent activity…")).toHaveCount(0);
+    // Measure after the open transition, which offsets the card while it runs.
+    await card.evaluate((element) =>
+      Promise.all(
+        element.getAnimations().map((animation) => animation.finished),
+      ),
+    );
+    const row = await inboxRow.boundingBox();
+    const box = await card.boundingBox();
+    // Where there is room the card sits 6px past the row's hover background,
+    // with the line under its header at the row's top edge; otherwise the
+    // shared popover moves it, never over the row.
+    if (width >= 1280) {
+      const header = await card.locator("header").boundingBox();
+      expect(Math.abs(box.x - (row.x + row.width + 6))).toBeLessThanOrEqual(1);
+      // The first dock item can be too high for header-line alignment; the
+      // shared popup then keeps its 8px viewport gutter instead.
+      const alignedTop = row.y - (header.y - box.y) - header.height + 1;
+      expect(Math.abs(box.y - Math.max(8, alignedTop))).toBeLessThanOrEqual(1);
+    } else
+      expect(box.y >= row.y + row.height || box.x >= row.x + row.width).toBe(
+        true,
+      );
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(width);
+    expect(box.y + box.height).toBeLessThanOrEqual(900);
+    expect(
+      await card.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: testInfo.outputPath(
+        `inbox-preview-${mode}-${width}-${fontSize}.png`,
+      ),
+    });
+    // Leaving the row and card dismisses it.
+    await page.mouse.move(width - 20, 880);
+    await expect(card).toHaveCount(0);
+  }
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.evaluate(() => {
+    document.documentElement.dataset.colorMode = "light";
+    document.documentElement.classList.remove("dark");
+    document.documentElement.style.fontSize = "";
+  });
+
+  // Unread only belongs to the card; the Inbox page keeps its own filters.
+  await inboxRow.hover();
+  const unreadOnly = card.getByRole("switch", { name: "Unread only" });
+  await unreadOnly.click();
+  await expect(unreadOnly).toBeChecked();
+
+  // A row opens its conversation directly and closes the card; Inbox stays unselected.
+  await rows
+    .getByRole("button", { name: /^Open / })
+    .filter({ hasText: "Unread reply 1" })
+    .click();
+  await expect(card).toHaveCount(0);
+  await expect(
+    page.getByRole("region", { name: "Thread messages", exact: true }),
+  ).toBeVisible();
+  await expect(inboxRow).toHaveAttribute("aria-selected", "false");
+  await expect(
+    page.getByRole("region", { name: "Inbox", exact: true }),
+  ).toHaveCount(0);
+
+  // While Inbox is the open page, its row offers no preview.
+  await inboxRow.click();
+  await expect(inboxRow).toHaveAttribute("aria-selected", "true");
+  await expect(inboxRow).not.toHaveAttribute("aria-haspopup");
+  await expect(
+    page
+      .getByRole("region", { name: "Inbox", exact: true })
+      .getByRole("button", { name: "Unread only", exact: true }),
+  ).toHaveAttribute("aria-pressed", "false");
+  // Selected dock items use the same instant right-side label as their peers.
+  await page.mouse.move(1200, 880);
+  await inboxRow.hover();
+  const hint = page.getByRole("tooltip", { name: "Inbox", exact: true });
+  await expect(hint).toBeVisible();
+  const triggerBounds = await inboxRow.boundingBox();
+  const hintBounds = await hint.boundingBox();
+  expect(hintBounds.x).toBeGreaterThanOrEqual(
+    triggerBounds.x + triggerBounds.width,
+  );
+  await page.screenshot({
+    path: testInfo.outputPath("selected-inbox-tooltip.png"),
+  });
+});

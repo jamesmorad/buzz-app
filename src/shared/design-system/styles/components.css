@@ -702,6 +702,8 @@
   /* A preview is supplemental context; destination cards can also open it.
      It is portal-rendered by Base UI so a clipped parent cannot hide it. */
   .buzz-preview-card-positioner[popover] {
+    /* Only interactive popup content owns hit-testing, never its empty shell. */
+    pointer-events: none;
     margin: 0;
     padding: 0;
     border: 0;
@@ -1169,7 +1171,8 @@
     color: var(--text-standard);
   }
   .buzz-tabs[data-variant="dock"] .buzz-tabs-tab[data-selected] {
-    color: var(--text-standard);
+    background: var(--surface-sidebar-selected);
+    color: var(--text-sidebar-selected);
   }
   .buzz-tabs[data-variant="dock"] .buzz-tabs-badge {
     position: absolute;
@@ -1889,6 +1892,16 @@
   .buzz-sidebar-navigation .navigation-item[data-variant="row"][data-selected] {
     --navigation-item-text: var(--text-row-selected);
   }
+  /* Pressing an unselected sidebar row keeps its quiet fill and matching ink. */
+  .buzz-sidebar-navigation
+  .navigation-item[data-variant="row"]:active:not(
+    [data-selected],
+    [data-disabled],
+    :disabled
+  ) {
+    --text-subtle: var(--text-sidebar-hover);
+    --text-metadata: var(--text-sidebar-hover);
+  }
   .buzz-sidebar-navigation .navigation-item[data-variant="row"][data-inset] {
     padding-inline-start: calc(var(--space-2) + var(--space-6));
   }
@@ -1943,13 +1956,15 @@
   }
   .buzz-tabs[data-variant="navigation"] .buzz-tabs-list {
     min-width: 0;
-    height: var(--size-panel-header);
+    /* The shared header's bottom border is part of its total height. */
+    height: calc(var(--size-panel-header) - 1px);
     align-items: flex-start;
     overflow-x: auto;
     overflow-y: hidden;
     gap: var(--space-1);
-    /* The scrollbar uses the bottom inset without moving the tab row. */
-    padding-block: var(--space-1) 0;
+    /* Split the header's 1px separator evenly between the visual insets.
+       The scrollbar uses the bottom inset without moving the tab row. */
+    padding-block: calc(var(--space-1) - 0.5px) 0;
   }
   .buzz-tabs[data-variant="navigation"] .buzz-tabs-item {
     display: flex;

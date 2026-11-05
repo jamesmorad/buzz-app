@@ -131,7 +131,12 @@ the row's alignment. A row is not an extra click target around its input. Preser
 visible labels and connect help/error text; placeholders cannot replace labels.
 Use `Accordion` for optional details, retaining mounted draft input where needed.
 Use `Accordion variant="settings"` for disclosures alongside preference rows.
-Its full-row trigger uses the settings container shape and spacing; the chevron
+Inside a row-layout `SettingsGroup`, it shares the group's frame and content inset,
+with square trigger corners so the hover fill follows the flat row dividers.
+The disclosure spans the group's inner width; its trigger and content retain the
+group's horizontal inset, so text has padding inside the hover fill. No divider
+separates the trigger from its expanded content.
+Standalone triggers use the settings container shape and spacing; the chevron
 is decorative, and the entire row expands the content. `Select variant="preference"` uses the same
 label and compact choice control without adding a group container.
 See [settings fills and spacing](../../../docs/design-system.md#content-headers-and-settings-fills).
@@ -696,8 +701,9 @@ panel fill. Use it over artwork, not on ordinary neutral profile headers.
 
 The shell uses a vertical `Tabs variant="dock"` rail on the left, ordered
 Bestie, Inbox, then the normal app order. Wide search stays centered in the top
-bar. Creation sits beside the sidebar scope filters, or in the top bar when the
-sidebar is closed. The sidebar and detail pane share one joined surface; the
+bar and fills the available space between controls at compact widths. Creation
+sits beside the sidebar scope filters; Cmd/Ctrl+N opens it only where the app
+has a creation sidebar. The sidebar and detail pane share one joined surface; the
 resize seam is a persistent `border-standard` hairline. Layout and overflow
 remain shell-owned.
 
@@ -1165,9 +1171,9 @@ components, not a screenshot's measured offsets.
 
 - **Leading identity:** static destinations use `PanelHeaderLabel`, including its
   icon slot and title typography. Omit the icon when there is no meaningful one.
-  Existing channel/workspace tabs retain `Tabs variant="navigation"`; the channel's
-  single non-closable tab uses `showSelection={false}`. Do not invent tab semantics
-  for a static page just to reproduce its appearance.
+  Additional channel/workspace tabs retain `Tabs variant="navigation"`; the lone
+  conversation uses its membership identity. Do not invent tab semantics for a
+  static page just to reproduce its appearance.
 - **Conversation membership identity (proposed):** channels and DMs combine the
   compact member avatar stack before the name in one left-aligned
   `SurfaceButton`. It uses 24px avatars and sidebar-row body-sm labels, while
@@ -1443,8 +1449,8 @@ semantics, hug their contents up to a 12rem maximum with ellipsis, use 18px corn
 actions, and a subtle selected fill, accept avatars/icons, and place a sibling close
 button over reserved trailing space. Tab close icons use 1rem artwork to match
 container header actions while retaining their compact hit areas. Close buttons stay visible on the active tab; inactive tabs reveal them on hover or keyboard focus. Touch devices keep close buttons visible. Navigation tab strips scroll only horizontally. Their rounded thumb uses the sidebar’s quiet scrollbar role, with a 3px visible thumb in the header’s 4px bottom inset. The tab row keeps its vertical position as overflow starts or stops. It appears only while the strip is hovered; touch devices retain the thumb without requiring hover. The main
-channel header uses the same control with a single non-closable tab with `showSelection={false}` (no selection or hover fill); that
-title tab fills the header's title slot instead of stopping at 12rem, truncating only when the header runs out of room; channel
+channel header uses its membership identity instead of a lone permanent tab.
+Additional content tabs retain the shared tab strip beside that identity; channel
 actions remain in the header action slot. The settings launcher uses
 `data-highlight-expanded="false"` to preserve disclosure semantics without a
 sticky pressed treatment; the selected tab owns the open-state indicator.
@@ -1653,8 +1659,10 @@ Saved low or retired quiet contrast maps to Chillin’; high remains Buzzin’.
 
 Keep appearance decisions with the existing owners. `SidebarNavigation` scopes
 `surface-sidebar-selected`, `text-sidebar-selected`, `affordance-sidebar-hover`,
-and `text-sidebar-hover` to its row states. General navigation and tabs keep the
-neutral `surface-navigation-selected` / `text-navigation-selected` pair.
+and `text-sidebar-hover` to its row states. The shell app dock also uses the
+accent `surface-sidebar-selected` / `text-sidebar-selected` pair for its active
+app. Other navigation and tabs keep the neutral
+`surface-navigation-selected` / `text-navigation-selected` pair.
 The message renderer uses standard text on received bubbles, with
 `text-message-link` for their links and
 `text-message-link-own` for outgoing bubbles. Neutral code/table insets retain
@@ -1731,8 +1739,8 @@ and paired text. Do not generate unused role families from every palette hue.
 Existing palette utilities and older role names are compatibility APIs while
 callers migrate, not the default for new UI. Tailwind's stock palette is removed.
 
-`ShimmerText` gives a short live-work label (an agent's current step) a slow
-sheen from metadata text to standard text, with a distinct 1.8s sweep.
+`ShimmerText` gives a short live-work label (an agent's current step) a defined
+sheen from metadata text to standard text, with a 1.2s sweep.
 Use it only while that work is
 live, never on finished, failed or waiting text. Reduced motion shows plain text.
 
@@ -2030,8 +2038,10 @@ but keeps normal Tab/Enter and `aria-current="page"` semantics. Do not give rout
 buttons a tablist/tabpanel relationship when selection moves focus to main content.
 The wide shell dock is the deliberate exception: global destinations use
 `Tabs variant="dock"` linked to the retained, labelled page panel.
-The dock uses independent 40px icons with no resting or active capsule,
-12px corners, and an inactive hover fill. Selection retains its accessible state.
+The dock uses independent 40px icon tiles with 12px corners, a transparent resting
+state, and an inactive hover fill. The active tile uses the theme-accent
+`surface-sidebar-selected` / `text-sidebar-selected` pair and retains its
+accessible selected state.
 Dock artwork stays still on hover and press. Bestie uses its configured avatar
 from the shared page presentation, at the standard avatar size.
 Dock labels remain accessible and use instant tooltips to the right of each vertical dock

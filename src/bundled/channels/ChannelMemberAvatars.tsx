@@ -2,6 +2,7 @@ import { useProfileGeneration } from "../../features/relay/react";
 import { useEffect, useSyncExternalStore } from "react";
 import type { RelaySession } from "../../features/relay/session";
 import { useIdentityNames } from "../../features/identity-names/react";
+import { Avatar } from "../../shared/design-system/ui/Avatar";
 import { AvatarStack } from "../../shared/design-system/ui/AvatarStack";
 import { UsersIcon, RobotIcon } from "../../shared/design-system/icons";
 import { avatarMedia } from "../../shared/avatar-source";
@@ -64,7 +65,15 @@ export function ChannelMemberAvatars({
     );
   if (!preview.length) {
     const Icon = solo ? RobotIcon : UsersIcon;
-    return <Icon size="1.5rem" aria-hidden="true" />;
+    return (
+      <Avatar
+        size="small"
+        shape="circle"
+        alt=""
+        fallback={solo ? "Agents" : "Members"}
+        fallbackContent={<Icon size="1rem" aria-hidden="true" />}
+      />
+    );
   }
   const shown = 3;
   return (

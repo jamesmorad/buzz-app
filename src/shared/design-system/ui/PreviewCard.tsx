@@ -33,6 +33,8 @@ export type PreviewCardProps = {
   link?: ReactElement;
   /** First supplemental control or scrollport, reachable with Tab. Not used with link. */
   actionRef?: RefObject<HTMLElement | null>;
+  /** Keep within the viewport when space is tight; defaults to interactive previews. */
+  sticky?: boolean;
 };
 
 const focusableActions =
@@ -73,6 +75,7 @@ export function PreviewCard({
   id,
   link,
   actionRef,
+  sticky = !!actionRef,
   "aria-label": label,
 }: PreviewCardProps) {
   const triggerRef = useRef<HTMLAnchorElement>(null);
@@ -288,7 +291,7 @@ export function PreviewCard({
           collisionBoundary={boundary}
           side={side}
           // Keep supplemental controls reachable when no side has enough room.
-          sticky={!!actionRef}
+          sticky={sticky}
           anchor={anchor}
           align={align}
           sideOffset={sideOffset}

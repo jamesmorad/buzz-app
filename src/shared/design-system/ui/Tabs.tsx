@@ -17,6 +17,7 @@ import {
   type ComponentPropsWithRef,
   type MouseEvent,
   type ReactNode,
+  type ReactElement,
 } from "react";
 
 /** Marks a scrolling strip's edges that have tabs past them, for the fade. */
@@ -64,6 +65,10 @@ export type TabItem<Value extends string> = {
   icon?: ReactNode;
   disabled?: boolean;
   trailing?: ReactNode;
+  /** Compose an anchored surface around the actual tab trigger, replacing its default hint. */
+  renderTab?:
+    | ((tab: ReactElement<ComponentPropsWithRef<"button">>) => ReactElement)
+    | undefined;
   /** Link a retained, externally owned tab panel. */
   panelId?: string;
   /** Increment to briefly identify an already-open navigation tab. */
@@ -280,7 +285,9 @@ export function Tabs<Value extends string>({
               onClose={item.onClose}
               onRename={item.onRename && (() => setRenaming(item.value))}
             >
-              {variant === "dock" ? (
+              {item.renderTab ? (
+                item.renderTab(tab)
+              ) : variant === "dock" ? (
                 <Tooltip
                   content={item.label}
                   hint="instant"

@@ -9,6 +9,15 @@ test("shared navigation preserves drafts and history across Solo and header page
   page,
   app,
 }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "buzzodz.plugins.v1",
+      JSON.stringify({
+        version: 3,
+        enabled: { "buzz.reminders": true, "buzz.workflows": true },
+      }),
+    );
+  });
   await page.goto(app.origin);
   await openPage(page, "Messages");
   const composer = page.getByRole("textbox", {
@@ -200,7 +209,11 @@ test("a page sidebar uses the shell slot, generic toggle, theme, and narrow draw
       "buzzodz.plugins.v1",
       JSON.stringify({
         version: 2,
-        enabled: { "fixture.page-placement": true },
+        enabled: {
+          "fixture.page-placement": true,
+          "buzz.reminders": true,
+          "buzz.workflows": true,
+        },
       }),
     );
   });
@@ -390,7 +403,11 @@ test.describe("failed page sidebar recovery", () => {
         "buzzodz.plugins.v1",
         JSON.stringify({
           version: 2,
-          enabled: { "fixture.page-placement": true },
+          enabled: {
+            "fixture.page-placement": true,
+            "buzz.reminders": true,
+            "buzz.workflows": true,
+          },
         }),
       );
     });
@@ -476,7 +493,11 @@ test("dock destinations and titlebar controls remain reachable through scale and
       "buzzodz.plugins.v1",
       JSON.stringify({
         version: 2,
-        enabled: { "fixture.page-placement": true },
+        enabled: {
+          "fixture.page-placement": true,
+          "buzz.reminders": true,
+          "buzz.workflows": true,
+        },
       }),
     );
   });
@@ -504,7 +525,7 @@ test("dock destinations and titlebar controls remain reachable through scale and
       await page.evaluate((scale) => {
         document.documentElement.style.fontSize = `${scale * 100}%`;
       }, scale);
-      for (const width of [1600, 1024, 650, 390]) {
+      for (const width of [1600, 1024, 800, 650, 480, 390]) {
         await page.setViewportSize({ width, height: 950 });
         await expect(dock).toBeVisible();
         const search = page.getByRole("button", {
@@ -512,6 +533,57 @@ test("dock destinations and titlebar controls remain reachable through scale and
           exact: true,
         });
         await expect(search).toBeInViewport({ ratio: 1 });
+        if (width >= 480 * scale) {
+          await expect
+            .poll(() =>
+              page.locator(".shell-header").evaluate((header) => {
+                const search = header
+                  .querySelector(".shell-menu-search")
+                  .getBoundingClientRect();
+                const history = header
+                  .querySelector(".shell-history")
+                  .getBoundingClientRect();
+                const actions = header
+                  .querySelector(".shell-actions")
+                  .getBoundingClientRect();
+                return (
+                  Math.abs(
+                    search.y +
+                      search.height / 2 -
+                      history.y -
+                      history.height / 2,
+                  ) < 1 &&
+                  Math.abs(
+                    search.y +
+                      search.height / 2 -
+                      actions.y -
+                      actions.height / 2,
+                  ) < 1
+                );
+              }),
+            )
+            .toBe(true);
+        }
+
+        await expect
+          .poll(async () => {
+            const box = await search.boundingBox();
+            const history = await page.locator(".shell-history").boundingBox();
+            const actions = await page.locator(".shell-actions").boundingBox();
+            const sameRow =
+              Math.abs(
+                box.y + box.height / 2 - history.y - history.height / 2,
+              ) < 1;
+            if (width < 1024 * scale && sameRow) {
+              // Compact Search fills the available track, retaining the requested 24pt gaps.
+              return Math.max(
+                Math.abs(box.x - history.x - history.width - 24 * scale),
+                Math.abs(actions.x - box.x - box.width - 24 * scale),
+              );
+            }
+            return Math.abs(box.x + box.width / 2 - width / 2);
+          })
+          .toBeLessThan(1);
         await expect
           .poll(() =>
             page.locator(".shell-header").evaluate((header) => {

@@ -14,6 +14,7 @@ import {
   render,
   screen,
   within,
+  waitFor,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useEffect, type ReactNode } from "react";
@@ -268,9 +269,13 @@ it("keeps the narrow Messages sidebar in the existing Escape-dismissed navigatio
   expect(screen.getByRole("button", { name: "Show navigation" })).toBeVisible();
 });
 
-it.each([true, false])(
-  "opens New with Mod+N without navigating (sidebar placement: %s)",
-  async (creationInSidebar) => {
+it.each([
+  { creationInSidebar: true, selected: "buzz.channels/channels" },
+  { creationInSidebar: false, selected: "buzz.channels/channels" },
+  { creationInSidebar: true, selected: "inbox" },
+])(
+  "keeps New in its sidebar ($selected, sidebar placement: $creationInSidebar)",
+  async ({ creationInSidebar, selected }) => {
     const current = createServices();
     services = current;
     const select = vi.fn();
@@ -280,7 +285,7 @@ it.each([true, false])(
       <ToastProvider>
         <AppShell
           pages={[]}
-          selected="buzz.channels/channels"
+          selected={selected}
           navigationAttempt="same-conversation"
           onSelect={select}
           tone="default"
@@ -313,15 +318,19 @@ it.each([true, false])(
         </AppShell>
       </ToastProvider>,
     );
-    await user.click(screen.getByRole("button", { name: "Hide sidebar" }));
+    if (selected === "buzz.channels/channels") {
+      await user.click(screen.getByRole("button", { name: "Hide sidebar" }));
+    }
     expect(
-      within(screen.getByRole("banner")).getByRole("button", { name: "New" }),
-    ).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "New" }));
-    expect(
-      await screen.findByRole("menuitem", { name: "New chat" }),
-    ).toBeVisible();
-    await user.keyboard("{Escape}");
+      within(screen.getByRole("banner")).queryByRole("button", { name: "New" }),
+    ).toBeNull();
+    if (!creationInSidebar || selected === "inbox") {
+      expect(screen.queryByRole("button", { name: "New" })).toBeNull();
+      fireEvent.keyDown(window, { key: "n", ctrlKey: true });
+      expect(screen.queryByRole("menuitem", { name: "New chat" })).toBeNull();
+      expect(select).not.toHaveBeenCalled();
+      return;
+    }
     fireEvent.keyDown(window, { key: "n", ctrlKey: true });
     expect(
       await screen.findByRole("menuitem", { name: "New chat" }),
@@ -499,6 +508,163 @@ it.each(["sidebar", "topbar", "toolbar"] as const)(
       expect(screen.getByText("Retained content")).toBeVisible();
       view.rerender(tree([]));
       expect(screen.queryByRole(role, { name: /Healthy/ })).toBeNull();
+    } finally {
+      error.mockRestore();
+    }
+  },
+);
+
+it.each(["sidebar", "topbar"] as const)(
+  "previews inactive %s pages on hover while retaining navigation and focus handoff",
+  async (placement) => {
+    const current = createServices();
+    services = current;
+    let hover = true;
+    vi.stubGlobal("matchMedia", (media: string) => ({
+      media,
+      matches: hover && media.includes("(hover: hover)"),
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    const page = (
+      id: string,
+      preview: RegisteredPage["preview"],
+      placement?: RegisteredPage["placement"],
+    ): RegisteredPage => ({
+      id,
+      key: `example/${id}`,
+      pluginId: "example",
+      revision: "1",
+      title: id,
+      component: () => null,
+      primary: true,
+      ...(preview ? { preview } : {}),
+      ...(placement ? { placement } : {}),
+      ...(placement === "sidebar" ? { sidebar: () => null } : {}),
+    });
+    const pages = [
+      page("Home", undefined, placement),
+      page(
+        "Inbox",
+        ({ close }) => (
+          <button type="button" onClick={close}>
+            Recent item
+          </button>
+        ),
+        placement,
+      ),
+      page(
+        "Broken",
+        () => {
+          throw new Error("broken preview");
+        },
+        placement,
+      ),
+      page("Notes", undefined, "topbar"),
+    ];
+    const shell = (selected: string) => (
+      <ToastProvider>
+        <AppShell
+          pages={pages}
+          selected={selected}
+          navigationAttempt=""
+          onSelect={onSelect}
+          tone="default"
+          sidebar={(links) => (
+            <aside aria-label="Fixture sidebar">{links}</aside>
+          )}
+          communities={current.communities}
+          accountActions={current.accountActions}
+          appearance={testAppearance}
+        >
+          content
+        </AppShell>
+      </ToastProvider>
+    );
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const view = render(shell("example/Home"));
+      const landmark = placement === "sidebar" ? "Pages" : "Apps dock";
+      const role = placement === "sidebar" ? "button" : "tab";
+      const nav = screen.getByRole("navigation", { name: landmark });
+      const inbox = within(nav).getByRole(role, { name: "Inbox" });
+      // Rich previews replace the trigger's ordinary title hint.
+      expect(inbox).toHaveAttribute("aria-haspopup", "dialog");
+      expect(inbox).not.toHaveAttribute("title");
+      expect(screen.getByRole("tab", { name: "Notes" })).not.toHaveAttribute(
+        "aria-haspopup",
+      );
+      await user.hover(inbox);
+      const card = await screen.findByRole("dialog", { name: "Inbox" });
+      expect(inbox).toHaveAttribute("data-popup-preview");
+      expect(screen.queryByRole("tooltip", { name: "Inbox" })).toBeNull();
+      // Content closes the card, for example after opening a conversation, and
+      // focus is not pulled back to the row.
+      await user.click(
+        within(card).getByRole("button", { name: "Recent item" }),
+      );
+      await waitFor(() => expect(card).not.toBeInTheDocument());
+      expect(inbox).not.toHaveFocus();
+
+      // A throwing preview renders nothing and leaves navigation usable.
+      const broken = within(nav).getByRole(role, { name: "Broken" });
+      await user.hover(broken);
+      expect(
+        await screen.findByRole("dialog", { name: "Broken" }),
+      ).toBeEmptyDOMElement();
+      await user.click(broken);
+      expect(onSelect).toHaveBeenLastCalledWith(
+        "example/Broken",
+        ...(placement === "topbar" ? [{ focus: "preserve" }] : []),
+      );
+      await user.unhover(broken);
+      await waitFor(() =>
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+      );
+
+      // Pressing the row selects its page instead of opening the card.
+      await user.click(inbox);
+      expect(onSelect).toHaveBeenLastCalledWith(
+        "example/Inbox",
+        ...(placement === "topbar" ? [{ focus: "preserve" }] : []),
+      );
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+      // A selected page shows no preview of itself.
+      view.rerender(shell("example/Inbox"));
+      expect(within(nav).getByRole(role, { name: "Inbox" })).toBe(inbox);
+      if (placement === "topbar") expect(inbox).toHaveFocus();
+      expect(
+        within(nav).getByRole(role, { name: "Inbox" }),
+      ).not.toHaveAttribute("aria-haspopup");
+      if (placement === "topbar") {
+        expect(inbox).not.toHaveAttribute("title");
+        await user.unhover(inbox);
+        await user.hover(inbox);
+        expect(
+          await screen.findByRole("tooltip", { name: "Inbox" }),
+        ).toBeVisible();
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        expect(inbox).toHaveFocus();
+      } else {
+        expect(within(nav).getByRole(role, { name: "Inbox" })).toHaveAttribute(
+          "title",
+          "Inbox",
+        );
+      }
+      view.unmount();
+
+      // Devices without hover never get one.
+      hover = false;
+      render(shell("example/Home"));
+      expect(
+        within(screen.getByRole("navigation", { name: landmark })).getByRole(
+          role,
+          { name: "Inbox" },
+        ),
+      ).not.toHaveAttribute("aria-haspopup");
     } finally {
       error.mockRestore();
     }

@@ -10,6 +10,7 @@ import type { RelayData } from "../../features/relay/service";
 import { useSavedAgent } from "../../features/solo/default-agent";
 import { pagePresentation } from "./presentation";
 import { useAvatarPreview } from "../../features/profiles/use-avatar-preview";
+import styles from "./BestieNavigation.module.css";
 import {
   BESTIE_PAGE,
   BestieNavigationContext,
@@ -84,7 +85,7 @@ export function BestieUnreadBadge({ pageKey }: { pageKey: string }) {
   const conversation = useContext(BestieConversationContext);
   if (pageKey !== BESTIE_PAGE || !conversation) return null;
   return (
-    <span className={channelStyles.indicatorStack} data-channel-indicators="">
+    <span className={styles.badge} data-channel-indicators="">
       <span className={channelStyles.indicatorLayer}>
         <UnreadBadge
           session={conversation.session}

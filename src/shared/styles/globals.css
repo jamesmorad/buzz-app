@@ -205,8 +205,11 @@
     scrollbar-width: none;
   }
   .shell-menu-search {
-    flex: 0 1 clamp(12rem, 35vw, 32rem);
-    min-width: min(100%, 12rem);
+    width: 100%;
+    max-width: 32rem;
+    min-width: calc(2 * var(--space-6));
+    justify-self: center;
+    container-type: inline-size;
   }
   .shell-background .shell-menu-search > .buzz-button {
     width: 100%;
@@ -218,43 +221,41 @@
   .shell-search-content {
     @apply flex w-full items-center gap-2 text-body-sm text-subtle;
   }
-  .shell-search-shortcut {
-    margin-inline-start: auto;
-  }
 
   .shell-header {
     --interaction-hover: var(--affordance-backdrop-hover);
     --interaction-pressed: var(--affordance-backdrop-pressed);
     --interaction-selected: var(--affordance-backdrop-pressed);
-    @apply relative flex shrink-0 items-center justify-between;
+    @apply relative grid shrink-0 items-center;
+    grid-template-columns: var(--shell-header-wing, max-content) minmax(0, 1fr) var(
+        --shell-header-wing,
+        max-content
+      );
     min-height: calc(var(--size-control-sm) + var(--space-3));
-    /* Wrap complete controls when enlarged text or a narrow viewport needs it. */
     padding-block: var(--space-1);
-    flex-wrap: wrap;
-    padding-inline: var(--space-panel-gap);
-    gap: var(--space-2);
+    padding-inline: var(--space-2);
+    gap: var(--space-6);
     /* The active area tint continues beneath the header. */
     background: transparent;
   }
   .shell-history {
     @apply flex items-center justify-start;
-    flex: 1 1 0;
+    width: max-content;
     min-width: max-content;
     gap: 0;
-    margin-left: var(--space-3);
-    padding-left: 0;
   }
   .shell-history > .navigation-item {
     flex-shrink: 1;
   }
-  .shell-header-mac .shell-history {
-    padding-left: calc(var(--space-16) + var(--space-4));
+  .shell-header-mac .shell-history::before {
+    content: "";
+    flex: none;
+    width: calc(var(--space-16) + var(--space-1));
   }
   .shell-community-switcher {
     display: flex;
     align-items: center;
     gap: 0;
-    margin-right: var(--space-3);
     min-width: 0;
   }
   .shell-actions-fixed {
@@ -376,7 +377,8 @@
   }
   .shell-actions {
     @apply flex items-center justify-end;
-    flex: 1 1 0;
+    justify-self: end;
+    width: max-content;
     min-width: max-content;
     gap: var(--space-2);
   }
@@ -404,14 +406,30 @@
     width: 1rem;
     height: 1rem;
   }
-  @media (max-width: 43.75rem) {
-    .shell-header {
-      padding-left: var(--space-2);
-      gap: var(--space-2);
+  @container (width < 6rem) {
+    .shell-search-label {
+      display: none;
     }
-    .shell-history {
-      padding-left: 0;
-    }
+  }
+  .shell-header[data-search-fluid="true"] {
+    grid-template-columns: max-content minmax(0, 1fr) max-content;
+  }
+  /* Only wrap when even the compact Search control cannot fit beside the controls. */
+  .shell-header[data-search-wrapped="true"] {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    row-gap: var(--space-2);
+  }
+  .shell-header[data-search-wrapped="true"] .shell-menu-search {
+    order: 1;
+    flex: 0 0 100%;
+    margin-inline: auto;
+    display: flex;
+    justify-content: center;
+  }
+  .shell-header[data-search-wrapped="true"] .shell-menu-search > .buzz-button {
+    max-width: 32rem;
   }
   /* Keep this in sync with AppShell's matchMedia navigation owner. */
   @media (max-width: 650px) {

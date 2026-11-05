@@ -2,6 +2,7 @@ import { PageNavigation } from "./PageNavigation";
 import { orderPages, pagePlacement } from "./presentation";
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -112,6 +113,40 @@ function AppShellContent({
   creationInSidebar?: boolean;
   children: ReactNode;
 }) {
+  const header = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const element = header.current;
+    if (!element) return;
+    const history = element.querySelector<HTMLElement>(".shell-history");
+    const actions = element.querySelector<HTMLElement>(".shell-actions");
+    const search = element.querySelector<HTMLElement>(".shell-menu-search");
+    if (!history || !actions || !search) return;
+    const measure = () => {
+      // Equal wings keep Search centered even when the native controls or launchers differ.
+      const wing = Math.max(history.offsetWidth, actions.offsetWidth);
+      const style = getComputedStyle(element);
+      const available =
+        element.clientWidth -
+        parseFloat(style.paddingLeft) -
+        parseFloat(style.paddingRight);
+      const searchStyle = getComputedStyle(search);
+      const controls =
+        history.offsetWidth +
+        actions.offsetWidth +
+        2 * parseFloat(style.columnGap);
+      element.dataset.searchFluid = String(
+        available < controls + parseFloat(searchStyle.maxWidth),
+      );
+      element.style.setProperty("--shell-header-wing", `${wing}px`);
+      element.dataset.searchWrapped = String(
+        available < controls + parseFloat(searchStyle.minWidth),
+      );
+    };
+    const observer = new ResizeObserver(measure);
+    for (const target of [element, history, actions]) observer.observe(target);
+    measure();
+    return () => observer.disconnect();
+  }, []);
   const fillsWorkspace = workspace || selected === "settings";
   const [creationContainer, setCreationContainer] =
     useState<HTMLDivElement | null>(null);
@@ -143,8 +178,7 @@ function AppShellContent({
   const navigationToggle = useRef<HTMLButtonElement>(null);
   const visibleSidebar =
     hasNavigation && (narrow ? navigationOpen : sidebarOpen);
-  const creationInNavigation =
-    !!creationAction && creationInSidebar && visibleSidebar;
+  const creationInNavigation = !!creationAction && creationInSidebar;
   useEffect(
     () =>
       searchServices?.shortcuts.registerHost({
@@ -154,6 +188,7 @@ function AppShellContent({
         order: 75,
         allowInEditable: true,
         when: () =>
+          hasNavigation &&
           !!creationAction &&
           !!creationContainer?.querySelector("button:not(:disabled)") &&
           (isApplePlatform(navigator.platform) ||
@@ -164,7 +199,7 @@ function AppShellContent({
           setCreationOpen(true);
         },
       }),
-    [searchServices, creationAction, creationContainer],
+    [searchServices, creationAction, creationContainer, hasNavigation],
   );
   const toggleLabel = narrow
     ? navigationOpen
@@ -195,6 +230,7 @@ function AppShellContent({
               )}
               selected={selected}
               onSelect={onSelect}
+              previews
             />
           </nav>,
           creationAction && creationInNavigation ? (
@@ -241,6 +277,7 @@ function AppShellContent({
         Skip to content
       </a>
       <header
+        ref={header}
         data-buzz-window-drag={
           macDesktop || hasIntegratedWindowControls() || undefined
         }
@@ -276,9 +313,6 @@ function AppShellContent({
             />
           )}
           {navigationControls}
-          {creationAction && !creationInNavigation && (
-            <div ref={setCreationContainer} />
-          )}
         </div>
         <div className="shell-menu-search">
           <PageSearch
@@ -327,6 +361,7 @@ function AppShellContent({
             selected={selected}
             onSelect={onSelect}
             placement="topbar"
+            previews
             orientation="vertical"
           />
         </nav>
@@ -381,7 +416,7 @@ function AppShellContent({
                   className="min-h-0 min-w-0 flex-1"
                 >
                   <Panel as="div" joined>
-                    <PanelFrame companion={companion}>
+                    <PanelFrame scope={connection.scope} companion={companion}>
                       <div
                         id={`shell-page-${selected}`}
                         {...(selectedDockPage

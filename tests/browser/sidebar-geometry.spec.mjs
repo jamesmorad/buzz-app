@@ -156,8 +156,8 @@ test("a presence badge preserves the sidebar avatar center and header insets", a
               element.querySelector('[role="tab"]') ??
               element.querySelector("[data-workspace-identity] button")
             ).getBoundingClientRect();
-            const outer = element.closest(".panel[data-joined]");
-            const bandTop = outer.getBoundingClientRect().top;
+            // The joined panel's outer border is outside this header's band.
+            const bandTop = frame.top;
             const separator = parseFloat(
               getComputedStyle(element).borderBottomWidth,
             );

@@ -28,6 +28,7 @@ import type { RelaySession } from "../relay/session";
 import type { OutgoingEvent } from "../relay/outbox";
 import { selectProfiles } from "../relay/profile-selection";
 import styles from "./Messages.module.css";
+import { isUnicodeEmojiOnly } from "./emoji-size";
 
 type Props = {
   row: ChannelMessage;
@@ -157,6 +158,9 @@ function ReactionGlyph({
         reaction.emoji
           ? styles.reactionFallbackEmoji
           : styles.reactionNativeEmoji
+      }
+      data-reaction-artwork={
+        (!reaction.emoji && isUnicodeEmojiOnly(reaction.content)) || undefined
       }
       aria-hidden="true"
     >
@@ -352,6 +356,8 @@ function ReactionEmoji({
         anchor={emojiAnchor}
         open={shown}
         warm={previewWarm}
+        // Scrollability must not change positioning and its measured available height.
+        sticky
         {...(overflowing && {
           actionRef: peopleList,
           "aria-label": `People who reacted with ${name}`,
