@@ -187,7 +187,7 @@ test("Share dialog keeps actions reachable across viewports and enlarged text an
   await page.goto(app.origin);
   await openChat(page, app, "beta");
   const trigger = page.getByRole("button", {
-    name: "Share access",
+    name: /^Manage members of /,
     exact: true,
   });
   await trigger.click();
@@ -369,7 +369,7 @@ test("People search holds loading, lists inline results and restores keyboard fo
   await page.goto(app.origin);
   await openChat(page, app, "beta");
   const trigger = page.getByRole("button", {
-    name: "Share access",
+    name: /^Manage members of /,
     exact: true,
   });
   await trigger.click();
@@ -517,7 +517,7 @@ test.describe("owned Solo invitation headings", () => {
       await openChat(page, app, soloId);
       await expect(page.locator("html")).toHaveCSS("--buzz-text-scale", "2");
       await page
-        .getByRole("button", { name: "Share access", exact: true })
+        .getByRole("button", { name: /^Manage members of /, exact: true })
         .click();
       const dialog = page.getByRole("dialog", { name: "Share access" });
       const search = dialog.getByRole("searchbox");
@@ -591,7 +591,7 @@ test.describe("Messages Share navigation", () => {
     await page.goto(app.origin);
     await openChat(page, app, "alpha");
     await page
-      .getByRole("button", { name: "Share access", exact: true })
+      .getByRole("button", { name: /^Manage members of /, exact: true })
       .click();
     const dialog = page.getByRole("dialog", { name: "Share access" });
     const search = dialog.getByRole("searchbox", {
@@ -607,7 +607,7 @@ test.describe("Messages Share navigation", () => {
     await openChat(page, app, "beta");
     await expect(dialog).toHaveCount(0);
     await page
-      .getByRole("button", { name: "Share access", exact: true })
+      .getByRole("button", { name: /^Manage members of /, exact: true })
       .click();
     await expect(
       dialog.getByRole("searchbox", { name: "Search people and channels" }),
@@ -626,7 +626,7 @@ test.describe("Messages Share navigation", () => {
       .toEqual({ channel: "alpha", status: "opened" });
     await expect(dialog).toHaveCount(0);
     await page
-      .getByRole("button", { name: "Share access", exact: true })
+      .getByRole("button", { name: /^Manage members of /, exact: true })
       .click();
     await expect(
       dialog.getByRole("searchbox", { name: "Search people and channels" }),
@@ -643,7 +643,7 @@ test.describe("Messages Share navigation", () => {
     await openChat(page, app, "alpha", next.id);
     await expect(dialog).toHaveCount(0);
     await page
-      .getByRole("button", { name: "Share access", exact: true })
+      .getByRole("button", { name: /^Manage members of /, exact: true })
       .click();
     await expect(
       dialog.getByRole("searchbox", { name: "Search people and channels" }),

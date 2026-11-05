@@ -35,8 +35,12 @@ for (const pane of ["side", "main"]) {
     const tab = (root) =>
       host.locator(`[role="tab"][data-tab-value="thread:alpha:${root.id}"]`);
     const showConversation = async () => {
-      if (pane === "main")
-        await main.getByRole("tab", { name: "Alpha", exact: true }).click();
+      const conversationTab = main.getByRole("tab", {
+        name: "Alpha",
+        exact: true,
+      });
+      if (pane === "main" && (await conversationTab.count()))
+        await conversationTab.click();
     };
     const openThread = async (root, keyboard = false) => {
       await showConversation();

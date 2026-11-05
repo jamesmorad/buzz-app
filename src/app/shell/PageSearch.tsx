@@ -9,7 +9,6 @@ import {
 } from "react";
 import { MagnifyingGlassIcon } from "../../shared/design-system/icons/index";
 import { Dialog } from "../../shared/design-system/ui/Dialog";
-import { IconButton } from "../../shared/design-system/ui/IconButton";
 import { Button } from "../../shared/design-system/ui/Button";
 import type { RegisteredPage } from "../../features/pages/service";
 import { communityDestination } from "../../features/communities/destination";
@@ -184,20 +183,24 @@ export function PageSearch({
   ).text;
   return (
     <>
-      <IconButton
-        hint="familiar"
+      <Button
         ref={trigger}
         variant="inverted"
-        size="md"
-        shape="round"
+        size="sm"
+        shape="capsule"
         aria-label="Search Buzz"
         title={`Search Buzz (${shortcut})`}
         onClick={() => {
           trigger.current?.focus();
           begin();
         }}
-        icon={<MagnifyingGlassIcon size={16} aria-hidden="true" />}
-      />
+      >
+        <span className="shell-search-content">
+          <MagnifyingGlassIcon size={16} aria-hidden="true" />
+          <span>Search</span>
+          <span className="shell-search-shortcut">{shortcut}</span>
+        </span>
+      </Button>
       <Dialog
         open={open}
         onOpenChange={setSearchOpen}

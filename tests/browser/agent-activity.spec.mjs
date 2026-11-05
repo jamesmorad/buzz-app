@@ -13,7 +13,9 @@ test.use({
 
 // Agent responses live in history; human typing stays beside the composer.
 const channelComposer = (page) =>
-  page.getByRole("tabpanel", { name: "Alpha", exact: true });
+  page
+    .getByRole("region", { name: "Alpha", exact: true })
+    .or(page.getByRole("tabpanel", { name: "Alpha", exact: true }));
 const activityTrigger = (scope) =>
   scope.locator("[data-agent-activity-trigger]");
 const responseAvatars = (trigger) =>
@@ -195,7 +197,7 @@ test("channel activity consumes telemetry, opens each agent's profile, and reset
     .toBe(true);
   await page
     .locator(
-      '.buzz-tabs-item:not(:has([data-tab-value^="thread:"])) > button:not([role="tab"])',
+      '.buzz-tabs-item:not(:has([data-tab-value^="thread:"])) > button[aria-label^="Close "]',
     )
     .click();
   // A busy skip followed by a successful retry must not masquerade as recovery.
@@ -253,7 +255,7 @@ test("channel activity consumes telemetry, opens each agent's profile, and reset
 
   await page
     .locator(
-      '.buzz-tabs-item:not(:has([data-tab-value^="thread:"])) > button:not([role="tab"])',
+      '.buzz-tabs-item:not(:has([data-tab-value^="thread:"])) > button[aria-label^="Close "]',
     )
     .click();
   // The popup's action has unmounted; focus returns to its floating trigger.
@@ -262,7 +264,7 @@ test("channel activity consumes telemetry, opens each agent's profile, and reset
   await expectProfile(page, second);
   await page
     .locator(
-      '.buzz-tabs-item:not(:has([data-tab-value^="thread:"])) > button:not([role="tab"])',
+      '.buzz-tabs-item:not(:has([data-tab-value^="thread:"])) > button[aria-label^="Close "]',
     )
     .click();
   await expect(trigger).toBeFocused();
@@ -323,7 +325,7 @@ test("channel activity consumes telemetry, opens each agent's profile, and reset
   // order, are the barrier for each transition. The route survives closing the profile.
   await page
     .locator(
-      '.buzz-tabs-item:not(:has([data-tab-value^="thread:"])) > button:not([role="tab"])',
+      '.buzz-tabs-item:not(:has([data-tab-value^="thread:"])) > button[aria-label^="Close "]',
     )
     .click();
   app.observer(activity("turn_liveness", "alpha", "parallel"), firstKey);
@@ -614,7 +616,7 @@ test.describe("thread activity", () => {
     await expectProfile(page, agent);
     await page
       .locator(
-        '.buzz-tabs-item:not(:has([data-tab-value^="thread:"])) > button:not([role="tab"])',
+        '.buzz-tabs-item:not(:has([data-tab-value^="thread:"])) > button[aria-label^="Close "]',
       )
       .click();
     // The profile and Thread share the detail pane; return to the thread.
@@ -639,7 +641,7 @@ test.describe("thread activity", () => {
     await expectProfile(page, agent);
     await page
       .locator(
-        '.buzz-tabs-item:not(:has([data-tab-value^="thread:"])) > button:not([role="tab"])',
+        '.buzz-tabs-item:not(:has([data-tab-value^="thread:"])) > button[aria-label^="Close "]',
       )
       .click();
     await openThread();
@@ -658,7 +660,7 @@ test.describe("thread activity", () => {
     await expectProfile(page, agent);
     await page
       .locator(
-        '.buzz-tabs-item:not(:has([data-tab-value^="thread:"])) > button:not([role="tab"])',
+        '.buzz-tabs-item:not(:has([data-tab-value^="thread:"])) > button[aria-label^="Close "]',
       )
       .click();
     // The reply summary opens the thread; channel activity never guesses
@@ -666,7 +668,7 @@ test.describe("thread activity", () => {
     await openThread();
     await page
       .locator(
-        '.buzz-tabs-item:has([data-tab-value^="thread:"][aria-selected="true"]) > button:not([role="tab"])',
+        '.buzz-tabs-item:has([data-tab-value^="thread:"][aria-selected="true"]) > button[aria-label^="Close "]',
       )
       .click();
     await expect(thread).toHaveCount(0);
@@ -868,7 +870,7 @@ test.describe("thread activity", () => {
     await expect(humanTyping(thread)).toHaveCount(0);
     await page
       .locator(
-        '.buzz-tabs-item:has([data-tab-value^="thread:"][aria-selected="true"]) > button:not([role="tab"])',
+        '.buzz-tabs-item:has([data-tab-value^="thread:"][aria-selected="true"]) > button[aria-label^="Close "]',
       )
       .click();
     await openThread(roots[1]);
@@ -879,7 +881,7 @@ test.describe("thread activity", () => {
     await expect(workingStatus).toBeEmpty();
     await page
       .locator(
-        '.buzz-tabs-item:has([data-tab-value^="thread:"][aria-selected="true"]) > button:not([role="tab"])',
+        '.buzz-tabs-item:has([data-tab-value^="thread:"][aria-selected="true"]) > button[aria-label^="Close "]',
       )
       .click();
     await openThread(roots[0]);
@@ -899,7 +901,7 @@ test.describe("thread activity", () => {
     await expect(humanTyping(thread)).toHaveCount(0);
     await page
       .locator(
-        '.buzz-tabs-item:has([data-tab-value^="thread:"][aria-selected="true"]) > button:not([role="tab"])',
+        '.buzz-tabs-item:has([data-tab-value^="thread:"][aria-selected="true"]) > button[aria-label^="Close "]',
       )
       .click();
     // The channel composer uses the same floating control and popup rows.

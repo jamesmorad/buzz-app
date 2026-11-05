@@ -75,7 +75,7 @@ test.describe("owner", () => {
     await openChat(page, app, own);
     const row = page.locator(`[data-solo-channel-id="${own}"]`);
     const access = page
-      .getByRole("button", { name: "Share access", exact: true })
+      .getByRole("button", { name: /^Manage members of /, exact: true })
       .last();
     const dialog = page.getByRole("dialog", {
       name: "Share access",
@@ -387,7 +387,7 @@ test.describe("visitor", () => {
       );
       await capture(article, info, `SOLO_DROPDOWN_VISITOR_${suffix}`);
       await page
-        .getByRole("button", { name: /^Share access/ })
+        .getByRole("button", { name: /^Manage members of / })
         .last()
         .click();
       const dialog = page.getByRole("dialog", {
@@ -418,7 +418,7 @@ test.describe("visitor", () => {
     await page.reload();
     await expect(article.locator("[data-message-id]").last()).toBeVisible();
     await page
-      .getByRole("button", { name: /^Share access/ })
+      .getByRole("button", { name: /^Manage members of / })
       .last()
       .click();
     const existingAccess = page.getByRole("dialog", {

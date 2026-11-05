@@ -556,7 +556,7 @@ test("Share grants access and posts a link without promoting or moving the Solo 
   }
   await expect(row).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Alpha", exact: true }),
+    page.getByRole("button", { name: "Manage members of Alpha", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByText(`primary ${id} message 0`, { exact: false }),
