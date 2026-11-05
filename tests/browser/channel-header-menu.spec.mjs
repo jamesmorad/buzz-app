@@ -548,10 +548,19 @@ test.describe("dialog origin retirement", () => {
   }
   async function back(page) {
     await page.goBack();
+    // Sidebar-origin dialogs keep the workspace inert on Back; inspect its retained identity.
     await expect(
       page
-        .getByRole("article", { name: "Conversation", exact: true })
-        .getByRole("button", { name: "Manage members of Beta", exact: true }),
+        .getByRole("article", {
+          name: "Conversation",
+          exact: true,
+          includeHidden: true,
+        })
+        .getByRole("button", {
+          name: "Manage members of Beta",
+          exact: true,
+          includeHidden: true,
+        }),
     ).toBeVisible();
   }
   test("Canvas retires without reading the next channel or losing its original draft", async ({
